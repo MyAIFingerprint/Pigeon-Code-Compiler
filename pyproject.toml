@@ -1,0 +1,18 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pigeon-code-compilor"
+version = "0.1.0"
+description = "Pigeon Protocol: identity, mutation tracking, and drift detection for Python codebases."
+readme = "README.md"
+license = { file = "LICENSE" }
+authors = [
+    { name = "MyAIFingerprint", email = "contact@myaifingerprint.com" }
+]
+requires-python = ">=3.9"
+
+[project.urls]
+Repository = "https://github.com/myaifingerprint/pigeon-code-compilor"
+Issues     = "https://github.com/myaifingerprint/pigeon-code-compilor/issues"
