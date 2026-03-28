@@ -1,0 +1,5 @@
+#!/bin/sh
+# pigeon post-commit hook
+# Install: cp hooks/post-commit .git/hooks/post-commit && chmod +x .git/hooks/post-commit
+
+pigeon post-commit .
