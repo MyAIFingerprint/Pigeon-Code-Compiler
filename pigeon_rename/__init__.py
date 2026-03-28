@@ -1,11 +1,11 @@
-"""Pigeon Code Compilor — Pigeon Protocol for source code.
+"""Pigeon Code Compiler — Pigeon Protocol for source code.
 
 Semantic structure, mutation tracking, and drift detection
 for Python codebases. Renames files to carry identity metadata,
 rewrites imports atomically, generates MANIFEST.md per folder,
 and tracks version history in a JSON registry.
 
-    pip install pigeon-code-compilor
+    pip install pigeon-code-compiler
     pigeon init .
     pigeon manifest .
     pigeon rename . --dry-run

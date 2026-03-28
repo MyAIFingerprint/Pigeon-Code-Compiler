@@ -1,4 +1,4 @@
-"""pigeon_rename.cli — Command-line interface for Pigeon Code Compilor.
+"""pigeon_rename.cli — Command-line interface for Pigeon Code Compiler.
 
 Pigeon Protocol for source code. Semantic structure,
 mutation tracking, and drift detection for Python codebases.

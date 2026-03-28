@@ -1,4 +1,4 @@
-"""Tests for the Pigeon Code Compilor package.
+"""Tests for the Pigeon Code Compiler package.
 
 Tests the full pipeline: scan → plan → rename → validate → manifest.
 All tests use a temporary directory with synthetic Python files.

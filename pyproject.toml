@@ -3,7 +3,7 @@ requires = ["setuptools>=68.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "pigeon-code-compilor"
+name = "pigeon-code-compiler"
 version = "0.1.0"
 description = "Pigeon Protocol for source code. Semantic structure, mutation tracking, and drift detection for Python codebases. By MyAIFingerprint."
 readme = "README.md"
@@ -32,8 +32,8 @@ classifiers = [
 
 [project.urls]
 Homepage = "https://myaifingerprint.com"
-Repository = "https://github.com/myaifingerprint/pigeon-code-compilor"
-Issues = "https://github.com/myaifingerprint/pigeon-code-compilor/issues"
+Repository = "https://github.com/myaifingerprint/pigeon-code-compiler"
+Issues = "https://github.com/myaifingerprint/pigeon-code-compiler/issues"
 
 [project.scripts]
 pigeon = "pigeon_rename.cli:main"

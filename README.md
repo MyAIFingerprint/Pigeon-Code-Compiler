@@ -1,8 +1,8 @@
-# Pigeon Code Compilor
+# Pigeon Code Compiler
 
 **Pigeon Protocol for source code. Semantic structure, mutation tracking, and drift detection for Python codebases.**
 
-[MyAIFingerprint](https://myaifingerprint.com) tracks how AI models perceive entities — detecting mutations, hallucinations, and consensus fractures across LLMs. Pigeon Code Compilor applies the same philosophy to source code: every file carries an identity, every change is a tracked mutation, and every folder emits a machine-readable manifest so both humans and AI systems can see what your code actually is.
+[MyAIFingerprint](https://myaifingerprint.com) tracks how AI models perceive entities — detecting mutations, hallucinations, and consensus fractures across LLMs. Pigeon Code Compiler applies the same philosophy to source code: every file carries an identity, every change is a tracked mutation, and every folder emits a machine-readable manifest so both humans and AI systems can see what your code actually is.
 
 ```
 noise_filter_seq007_v003_d0315__filter_live_noise_lc_added_drift_detection.py
@@ -20,7 +20,7 @@ Zero dependencies. Pure stdlib. Python 3.10+.
 ## Install
 
 ```bash
-pip install pigeon-code-compilor
+pip install pigeon-code-compiler
 ```
 
 ## Quick Start
@@ -80,9 +80,9 @@ chmod +x .git/hooks/post-commit
 
 ## Pigeon Protocol
 
-[MyAIFingerprint](https://myaifingerprint.com) runs cross-model consensus audits on entities — people, organizations, events — to detect how AI perception mutates over time. Pigeon Code Compilor is the same pattern applied to code:
+[MyAIFingerprint](https://myaifingerprint.com) runs cross-model consensus audits on entities — people, organizations, events — to detect how AI perception mutates over time. Pigeon Code Compiler is the same pattern applied to code:
 
-| MAIF (Entity Layer) | Pigeon Code Compilor (Code Layer) |
+| MAIF (Entity Layer) | Pigeon Code Compiler (Code Layer) |
 |---|---|
 | Entity registration | `pigeon init` — register module identities |
 | Mutation detection | Version bumps tracked in `pigeon_registry.json` |
@@ -147,6 +147,6 @@ drift_report = scan_drift('/path/to/project')
 
 ## About
 
-Pigeon Code Compilor is built by [MyAIFingerprint](https://myaifingerprint.com) (MAIF), the AI reputation intelligence platform that tracks how LLMs perceive 4,600+ entities across 8 major models. This tool extends the MAIF philosophy — identity, traceability, and semantic structure — from entities into source code.
+Pigeon Code Compiler is built by [MyAIFingerprint](https://myaifingerprint.com) (MAIF), the AI reputation intelligence platform that tracks how LLMs perceive 4,600+ entities across 8 major models. This tool extends the MAIF philosophy — identity, traceability, and semantic structure — from entities into source code.
 
 **Author:** [MyAIFingerprint](https://github.com/myaifingerprint) | **Site:** [myaifingerprint.com](https://myaifingerprint.com) | **License:** MIT
