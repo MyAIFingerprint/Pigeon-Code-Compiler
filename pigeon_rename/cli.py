@@ -265,13 +265,15 @@ def _cmd_split(target: str | None, root: Path, dry_run: bool) -> int:
         print(f'Splitting: {target_path}')
         result = split_file(target_path, dry_run=dry_run)
 
-        if not result:
+        if not result or not result.get('files'):
             print('  No split needed or unable to split.')
+            if result.get('message'):
+                print(f'  Reason: {result["message"]}')
             return 0
 
-        print(f'  Created {len(result)} chunks:')
-        for chunk in result:
-            print(f'    {chunk.name} ({chunk["lines"]} lines)')
+        print(f'  Created {result["files_created"]} chunks:')
+        for chunk in result['files']:
+            print(f'    {chunk["file"]} ({chunk["lines"]} lines)')
 
         if dry_run:
             print('[dry-run] No files written.')
@@ -287,7 +289,7 @@ def _cmd_split(target: str | None, root: Path, dry_run: bool) -> int:
 
     print(f'Found {len(oversized)} oversized file(s):')
     for item in oversized:
-        print(f'  {item.path.relative_to(root)} ({item.lines} lines, {item.excess} over)')
+        print(f'  {item["path"]} ({item["lines"]} lines, {item["excess"]} over)')
 
     results = split_all_oversized(root, dry_run=dry_run)
 
