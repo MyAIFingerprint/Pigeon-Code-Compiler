@@ -9,6 +9,7 @@ Commands:
   pigeon manifest <root>   — Regenerate all MANIFEST.md files
   pigeon audit <root>      — Run compliance audit (line count check)
   pigeon validate <root>   — Validate all internal imports resolve
+  pigeon heal <root>       — Self-healing: rebuild manifests for changed files
   pigeon post-commit       — Git hook: manifest + audit (run from repo root)
 """
 import argparse
@@ -55,6 +56,14 @@ def main(argv: list[str] = None):
     p_validate = sub.add_parser('validate', help='Validate all imports resolve')
     p_validate.add_argument('root', nargs='?', default='.')
 
+    # -- heal --
+    p_heal = sub.add_parser('heal', help='Self-healing: rebuild manifests for changed files')
+    p_heal.add_argument('root', nargs='?', default='.')
+    p_heal.add_argument('--full', action='store_true',
+                        help='Rebuild ALL manifests, not just changed')
+    p_heal.add_argument('--dry-run', action='store_true',
+                        help='Preview changes without writing')
+
     # -- post-commit --
     p_hook = sub.add_parser('post-commit',
                             help='Git hook: regenerate manifests + audit')
@@ -81,6 +90,8 @@ def main(argv: list[str] = None):
         return _cmd_audit(root)
     elif args.command == 'validate':
         return _cmd_validate(root)
+    elif args.command == 'heal':
+        return _cmd_heal(root, args.full, args.dry_run)
     elif args.command == 'post-commit':
         return _cmd_post_commit(root)
 
@@ -208,6 +219,22 @@ def _cmd_validate(root: Path) -> int:
         for b in result['broken']:
             print(f'  {b["file"]}:{b["line"]} -> {b["module"]}')
         return 1
+
+
+def _cmd_heal(root: Path, full: bool, dry_run: bool) -> int:
+    """Self-healing pipeline: rebuild manifests for changed files."""
+    from pigeon_rename.heal import heal, heal_report_text
+
+    mode = 'full' if full else 'incremental'
+    print(f'Running heal ({mode})...')
+
+    report = heal(root, full=full, dry_run=dry_run)
+    print(heal_report_text(report))
+
+    if dry_run:
+        print('[dry-run] No files written.')
+
+    return 0 if not report['compliance'].get('critical') else 1
 
 
 def _cmd_post_commit(root: Path) -> int:

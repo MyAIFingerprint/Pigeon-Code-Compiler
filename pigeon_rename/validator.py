@@ -1,13 +1,15 @@
 """pigeon_rename.validator — Post-rename import validation.
 
-Scans every .py file, parses import statements,
+Scans every .py file, parses import statements via AST,
 checks that every internal import resolves to an existing file.
 """
+import ast
 import re
 from pathlib import Path
 
 SKIP_DIRS = {'.venv', '__pycache__', 'node_modules', '.git',
-             '.next', '.pytest_cache', 'compiler_output'}
+             '_llm_tests_put_all_test_and_debug_scripts_here',
+             '.next', '.pytest_cache', 'compiler_output', 'build'}
 
 
 def validate_imports(root: Path, known_internal: set[str] = None) -> dict:
@@ -64,6 +66,38 @@ def _auto_detect_packages(root: Path) -> set[str]:
 
 
 def _extract_imports(text: str) -> list:
+    """Extract imports using AST for reliable parsing."""
+    try:
+        tree = ast.parse(text)
+    except SyntaxError:
+        # Fallback to regex if AST fails
+        return _extract_imports_regex(text)
+
+    results = []
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Import):
+            for alias in node.names:
+                results.append({
+                    'module': alias.name,
+                    'line': getattr(node, 'lineno', 0),
+                    'raw': f'import {alias.name}',
+                })
+        elif isinstance(node, ast.ImportFrom):
+            if node.level or not node.module:
+                continue
+            raw = 'from ' + node.module + ' import ' + ', '.join(
+                alias.name for alias in node.names
+            )
+            results.append({
+                'module': node.module,
+                'line': getattr(node, 'lineno', 0),
+                'raw': raw,
+            })
+    return results
+
+
+def _extract_imports_regex(text: str) -> list:
+    """Fallback regex-based import extraction."""
     results = []
     for i, line in enumerate(text.split('\n'), 1):
         s = line.strip()

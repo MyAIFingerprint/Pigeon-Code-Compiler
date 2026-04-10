@@ -20,6 +20,7 @@ from pigeon_rename.executor import execute_rename, rollback_rename
 from pigeon_rename.validator import validate_imports
 from pigeon_rename.manifest_builder import build_manifest, build_all_manifests
 from pigeon_rename.compliance import audit_compliance, check_file
+from pigeon_rename.heal import heal, heal_report_text
 from pigeon_rename.nametag import (
     extract_desc_slug, build_nametag, parse_nametag,
     detect_drift, scan_drift, slugify,
@@ -31,7 +32,7 @@ from pigeon_rename.registry import (
 )
 from pigeon_rename.limits import PIGEON_MAX, PIGEON_RECOMMENDED, is_excluded
 
-__version__ = "0.1.0"
+__version__ = "0.2.0"
 
 __all__ = [
     "scan_project",
@@ -44,6 +45,8 @@ __all__ = [
     "build_all_manifests",
     "audit_compliance",
     "check_file",
+    "heal",
+    "heal_report_text",
     "extract_desc_slug",
     "build_nametag",
     "parse_nametag",

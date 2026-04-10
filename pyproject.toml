@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "pigeon-code-compiler"
-version = "0.1.0"
+version = "0.2.0"
 description = "Pigeon Protocol for source code. Semantic structure, mutation tracking, and drift detection for Python codebases. By MyAIFingerprint."
 readme = "README.md"
 license = {text = "MIT"}
