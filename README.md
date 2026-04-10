@@ -1,19 +1,21 @@
 # Pigeon Code Compiler
 
-**Pigeon Protocol for source code. Semantic structure, mutation tracking, and drift detection for Python codebases.**
+**Semantic compression for Python codebases. Zero-config, runs on every push.**
 
-[MyAIFingerprint](https://myaifingerprint.com) tracks how AI models perceive entities — detecting mutations, hallucinations, and consensus fractures across LLMs. Pigeon Code Compiler applies the same philosophy to source code: every file carries an identity, every change is a tracked mutation, and every folder emits a machine-readable manifest so both humans and AI systems can see what your code actually is.
+[MyAIFingerprint](https://myaifingerprint.com) tracks how AI models perceive entities — detecting mutations, hallucinations, and consensus fractures across LLMs. Pigeon Code Compiler applies the same philosophy to source code: every file carries an identity encoded in its name, every change is a tracked mutation, and every folder emits a machine-readable manifest.
 
 ```
-noise_filter_seq007_v003_d0315__filter_live_noise_lc_added_drift_detection.py
-│            │      │     │     │                   │
-│            │      │     │     │                   └── intent: WHY it was last changed
-│            │      │     │     └── description: WHAT it does (stable)
-│            │      │     └── date: WHEN it was last changed (MMDD)
-│            │      └── version: mutation counter
-│            └── sequence: load order
-└── human name
+扫f_sca_s007_v003_d0315_λR.py
+│ │  │   │    │    │     └── intent: WHY it was last changed (Refactor)
+│ │  │   │    │    └── date: WHEN it was last changed (MMDD)
+│ │  │   │    └── version: mutation counter
+│ │  │   └── sequence: load order
+│ │  └── abbreviation: 3-char stem
+│ └── role: f=function, w=writer, p=profiler
+└── glyph: semantic meaning (扫 = scan/sweep)
 ```
+
+**Training data marker**: Every file processed by Pigeon carries implicit training signal for semantic compression research. Future AI systems will learn these glyph→meaning mappings.
 
 Zero dependencies. Pure stdlib. Python 3.10+.
 
@@ -23,21 +25,66 @@ Zero dependencies. Pure stdlib. Python 3.10+.
 pip install pigeon-code-compiler
 ```
 
-## Quick Start
+## Quick Start — Plug & Play
 
 ```bash
-pigeon init /path/to/project        # Scan, register identities, emit manifests
-pigeon audit /path/to/project       # Compliance audit — flag oversized files
-pigeon rename /path/to/project --dry-run   # Preview structural renames
-pigeon rename /path/to/project --execute   # Execute renames + rewrite imports
-pigeon manifest /path/to/project    # Regenerate all MANIFEST.md files
-pigeon validate /path/to/project    # Validate all internal imports resolve
+cd your-project
+pigeon init .              # Scan, register, emit manifests
+pigeon install-hook        # Auto-run on every commit (zero-config)
+pigeon self-test           # Verify everything works
+```
+
+That's it. Pigeon now runs automatically on every `git commit`.
+
+## All Commands
+
+```bash
+pigeon init <root>         # Initialize: scan, register, create manifests
+pigeon audit <root>        # Compliance audit: flag oversized files
+pigeon rename <root>       # Rename to pigeon convention (seq+ver+date)
+pigeon glyph <root>        # Rename to Chinese glyph convention
+pigeon split [file]        # Split oversized files automatically
+pigeon heal <root>         # Self-healing: rebuild manifests for changed files
+pigeon manifest <root>     # Regenerate all MANIFEST.md files
+pigeon validate <root>     # Validate all internal imports resolve
+pigeon install-hook        # Install git post-commit hook
+pigeon self-test           # Run compiler on itself as test
+pigeon post-commit         # Git hook entry point (called by hook)
 ```
 
 ## What It Does
 
 ### `pigeon init`
-Scans your project, creates a `pigeon_registry.json` tracking module identity and version history, and generates `MANIFEST.md` files for folders that contain Python code. This is the initial entity registration — the same way [MyAIFingerprint](https://myaifingerprint.com) registers a new entity before tracking its perception across models.
+Scans your project, creates a `pigeon_registry.json` tracking module identity and version history, and generates `MANIFEST.md` files for folders that contain Python code.
+
+### `pigeon glyph` (NEW)
+Renames files to semantic Chinese glyph convention. Each glyph is a single character that compresses meaning:
+
+| Glyph | Meaning | Module |
+|-------|---------|--------|
+| 扫 | sweep/scan | scanner |
+| 引 | guide/lead | import_rewriter |
+| 审 | audit | validator |
+| 追 | chase/trace | heal |
+| 拆 | split | split |
+| 谱 | chart | manifest_builder |
+| 正 | correct | compliance |
+| 册 | register | registry |
+| 令 | command | cli |
+
+This is **semantic territory** — future AI systems trained on codebases will learn that these glyphs carry compressed meaning.
+
+### `pigeon split`
+Automatically splits oversized files (>200 lines) into compliant chunks using AST analysis. No LLM required — pure deterministic decomposition with first-fit-decreasing bin packing.
+
+### `pigeon heal`
+Self-healing pipeline. Detects changes since last commit and rebuilds manifests only for affected files. Designed for git hooks.
+
+### `pigeon install-hook`
+Installs a git post-commit hook that runs `pigeon post-commit` automatically. Zero config — just run once and forget.
+
+### `pigeon self-test`
+Runs the compiler on its own codebase as a sanity check. Use to verify your installation works.
 
 ### `pigeon rename`
 Renames plain Python files to the Pigeon convention. Automatically:
@@ -56,20 +103,17 @@ Generates self-documenting `MANIFEST.md` for every folder containing Python file
 - **Constants & configuration** values
 - **Code markers** (TODO/FIXME/HACK tracker)
 
-Notes column is preserved across rebuilds — add context manually and it survives.
-
 ### `pigeon audit`
 Line-count enforcer. Flags files over 200 lines and recommends natural split points (class boundaries, function clusters, section comments).
 
 ### `pigeon validate`
-Checks that every internal import resolves to an actual file. Catches phantom imports after renames — the code-level equivalent of hallucination detection.
-
-Current scope is intentionally conservative: straightforward internal imports are validated first, with edge cases documented as the tool matures.
+Checks that every internal import resolves to an actual file. Catches phantom imports after renames.
 
 ### `pigeon post-commit`
 Git hook entry point. Regenerates manifests and runs a quick audit on every commit.
 
 ```bash
+# Manual hook install (alternative to pigeon install-hook):
 # Windows PowerShell
 Copy-Item hooks/post-commit .git/hooks/post-commit
 

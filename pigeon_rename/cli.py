@@ -1,17 +1,21 @@
 """pigeon_rename.cli — Command-line interface for Pigeon Code Compiler.
 
-Pigeon Protocol for source code. Semantic structure,
-mutation tracking, and drift detection for Python codebases.
+Semantic compression for Python codebases. Zero-config, runs on every push.
 
 Commands:
   pigeon init <root>       — Scan project, create registry + manifests
   pigeon rename <root>     — Rename non-compliant files to pigeon convention
+  pigeon glyph <root>      — Rename to Chinese glyph convention (semantic territory)
+  pigeon split [file]      — Split oversized files into compliant chunks
+  pigeon heal <root>       — Self-healing: rebuild manifests for changed files
   pigeon manifest <root>   — Regenerate all MANIFEST.md files
   pigeon audit <root>      — Run compliance audit (line count check)
   pigeon validate <root>   — Validate all internal imports resolve
-  pigeon heal <root>       — Self-healing: rebuild manifests for changed files
-  pigeon split [file]      — Split oversized files into compliant chunks
-  pigeon post-commit       — Git hook: manifest + audit (run from repo root)
+  pigeon install-hook      — Install git post-commit hook (zero-config)
+  pigeon self-test         — Run compiler on itself as test
+  pigeon post-commit       — Git hook entry point
+
+By MyAIFingerprint — https://myaifingerprint.com
 """
 import argparse
 import sys
@@ -74,6 +78,21 @@ def main(argv: list[str] = None):
     p_split.add_argument('--dry-run', action='store_true',
                          help='Preview splits without writing')
 
+    # -- glyph --
+    p_glyph = sub.add_parser('glyph', help='Rename files to semantic glyph convention')
+    p_glyph.add_argument('root', nargs='?', default='.')
+    p_glyph.add_argument('--dry-run', action='store_true', default=True,
+                         help='Preview renames (default)')
+    p_glyph.add_argument('--execute', action='store_true',
+                         help='Actually perform glyph renames')
+
+    # -- install-hook --
+    p_install = sub.add_parser('install-hook', help='Install git post-commit hook')
+    p_install.add_argument('root', nargs='?', default='.')
+
+    # -- self-test --
+    p_selftest = sub.add_parser('self-test', help='Run compiler on itself as test')
+
     # -- post-commit --
     p_hook = sub.add_parser('post-commit',
                             help='Git hook: regenerate manifests + audit')
@@ -104,6 +123,12 @@ def main(argv: list[str] = None):
         return _cmd_heal(root, args.full, args.dry_run)
     elif args.command == 'split':
         return _cmd_split(args.target, root, args.dry_run)
+    elif args.command == 'glyph':
+        return _cmd_glyph(root, not args.execute)
+    elif args.command == 'install-hook':
+        return _cmd_install_hook(root)
+    elif args.command == 'self-test':
+        return _cmd_self_test()
     elif args.command == 'post-commit':
         return _cmd_post_commit(root)
 
@@ -324,6 +349,151 @@ def _cmd_post_commit(root: Path) -> int:
         print(f'pigeon: all {audit["total"]} files compliant')
 
     return 0
+
+
+def _cmd_glyph(root: Path, dry_run: bool) -> int:
+    """Rename files to semantic glyph convention."""
+    from pigeon_rename.glyph import scan_for_glyph_candidates
+    from pigeon_rename.import_rewriter import rewrite_all_imports
+    from pigeon_rename.executor import execute_rename
+
+    print(f'Scanning for glyph rename candidates in {root}...')
+    candidates = scan_for_glyph_candidates(root)
+
+    if not candidates:
+        print('No files to glyph-rename. All mapped modules already renamed or no mappings.')
+        return 0
+
+    print(f'Found {len(candidates)} file(s) to glyph-rename:')
+    for c in candidates:
+        print(f'  {c["old"]} → {c["new"]}')
+        print(f'    glyph: {c["glyph"]} ({c["meaning"]})')
+
+    if dry_run:
+        print('\n[dry-run] No files renamed. Use --execute to apply.')
+        return 0
+
+    # Build rename map
+    rename_map = {}
+    for c in candidates:
+        old_path = root / c['path']
+        new_path = old_path.parent / c['new']
+        rename_map[str(old_path)] = str(new_path)
+
+    # Execute renames
+    result = execute_rename(rename_map)
+    if result.get('error'):
+        print(f'Error: {result["error"]}', file=sys.stderr)
+        return 1
+
+    # Rewrite imports
+    rewrite_all_imports(root, rename_map)
+
+    print(f'\nRenamed {len(candidates)} files to glyph convention.')
+    return 0
+
+
+def _cmd_install_hook(root: Path) -> int:
+    """Install git post-commit hook for auto-pigeon."""
+    git_dir = root / '.git'
+    if not git_dir.is_dir():
+        print(f'Error: {root} is not a git repository', file=sys.stderr)
+        return 1
+
+    hooks_dir = git_dir / 'hooks'
+    hooks_dir.mkdir(exist_ok=True)
+
+    hook_path = hooks_dir / 'post-commit'
+
+    hook_script = '''#!/bin/sh
+# Pigeon Code Compiler — auto-generated post-commit hook
+# Regenerates manifests + runs compliance audit on every commit
+# By MyAIFingerprint — https://myaifingerprint.com
+
+python -m pigeon_rename post-commit .
+'''
+
+    # Check for existing hook
+    if hook_path.exists():
+        existing = hook_path.read_text(encoding='utf-8', errors='ignore')
+        if 'pigeon_rename' in existing:
+            print('Pigeon hook already installed.')
+            return 0
+        # Append to existing hook
+        print('Appending to existing post-commit hook...')
+        with open(hook_path, 'a', encoding='utf-8') as f:
+            f.write('\n# Pigeon Code Compiler\n')
+            f.write('python -m pigeon_rename post-commit .\n')
+    else:
+        hook_path.write_text(hook_script, encoding='utf-8')
+
+    # Make executable (Unix)
+    try:
+        import os
+        os.chmod(hook_path, 0o755)
+    except Exception:
+        pass
+
+    print(f'Installed post-commit hook: {hook_path}')
+    print('Pigeon will now run automatically on every commit.')
+    return 0
+
+
+def _cmd_self_test() -> int:
+    """Run the compiler on itself as a test."""
+    import pigeon_rename
+    root = Path(pigeon_rename.__file__).parent
+
+    print('=' * 60)
+    print('PIGEON SELF-TEST — Running compiler on pigeon_rename/')
+    print('=' * 60)
+
+    # 1. Scan
+    print('\n[1/5] Scanning project...')
+    from pigeon_rename.scanner import scan_project
+    catalog = scan_project(root.parent, folders=['pigeon_rename'])
+    stats = catalog.get('stats', {})
+    print(f'  Found {len(catalog["files"])} files in {stats.get("folders", 1)} folders')
+
+    # 2. Audit compliance
+    print('\n[2/5] Checking compliance...')
+    from pigeon_rename.compliance import audit_compliance
+    audit = audit_compliance(root)
+    compliant = audit['total'] - len(audit['oversize'])
+    pct = (compliant / audit['total'] * 100) if audit['total'] else 100
+    print(f'  {compliant}/{audit["total"]} compliant ({pct:.0f}%)')
+    if audit['oversize']:
+        print(f'  ⚠️  {len(audit["oversize"])} files over {PIGEON_MAX} lines')
+
+    # 3. Validate imports
+    print('\n[3/5] Validating imports...')
+    from pigeon_rename.validator import validate_imports
+    validation = validate_imports(root)
+    if validation['broken']:
+        print(f'  ⚠️  {len(validation["broken"])} broken imports')
+    else:
+        print(f'  ✓ All {validation["total_checked"]} imports valid')
+
+    # 4. Check glyph candidates
+    print('\n[4/5] Checking glyph readiness...')
+    from pigeon_rename.glyph import scan_for_glyph_candidates
+    candidates = scan_for_glyph_candidates(root)
+    if candidates:
+        print(f'  {len(candidates)} files ready for glyph rename')
+    else:
+        print('  ✓ All modules glyph-ready or already renamed')
+
+    # 5. Summary
+    print('\n[5/5] Self-test complete.')
+    print('=' * 60)
+
+    issues = len(audit['oversize']) + len(validation.get('broken', []))
+    if issues:
+        print(f'RESULT: {issues} issue(s) found')
+        return 1
+    else:
+        print('RESULT: All checks passed ✓')
+        return 0
 
 
 # Allow `python -m pigeon_rename` to work
