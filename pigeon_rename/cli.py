@@ -265,15 +265,15 @@ def _cmd_split(target: str | None, root: Path, dry_run: bool) -> int:
         print(f'Splitting: {target_path}')
         result = split_file(target_path, dry_run=dry_run)
 
-        if not result or not result.get('files'):
-            print('  No split needed or unable to split.')
-            if result.get('message'):
-                print(f'  Reason: {result["message"]}')
+        if result.get('files_created', 0) == 0:
+            msg = result.get('message', result.get('error', 'unable to split'))
+            print(f'  {msg}')
             return 0
 
         print(f'  Created {result["files_created"]} chunks:')
-        for chunk in result['files']:
-            print(f'    {chunk["file"]} ({chunk["lines"]} lines)')
+        for f in result.get('files', []):
+            status = '✓' if f.get('compliant') else '⚠️'
+            print(f'    {status} {f["file"]} ({f["lines"]} lines)')
 
         if dry_run:
             print('[dry-run] No files written.')
@@ -289,12 +289,14 @@ def _cmd_split(target: str | None, root: Path, dry_run: bool) -> int:
 
     print(f'Found {len(oversized)} oversized file(s):')
     for item in oversized:
-        print(f'  {item["path"]} ({item["lines"]} lines, {item["excess"]} over)')
+        print(f'  {item["path"]} ({item["lines"]} lines, +{item["excess"]})')
 
     results = split_all_oversized(root, dry_run=dry_run)
 
-    total_chunks = sum(len(chunks) for chunks in results.values())
-    print(f'\nSplit {len(results)} files into {total_chunks} chunks.')
+    if results['split'] == 0:
+        print('\nNo files were split (items too large or no splittable items).')
+    else:
+        print(f'\nSplit {results["split"]}/{results["scanned"]} files → {results["files_created"]} chunks.')
 
     if dry_run:
         print('[dry-run] No files written.')
