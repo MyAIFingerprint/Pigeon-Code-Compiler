@@ -84,7 +84,11 @@ def parse_nametag(filename: str) -> dict:
             desc_slug, intent_slug = slug_raw.split(LC_SEP, 1)
         else:
             desc_slug = slug_raw
+    # Try standard format first: _seq(\d{3})_v(\d{3})
     seq_m = re.search(r'_seq(\d{3})_v(\d{3})', base)
+    if not seq_m:
+        # Try compressed format: _s(\d{3,4})_v(\d{3})
+        seq_m = re.search(r'_s(\d{3,4})_v(\d{3})', base)
     return {
         'stem': Path(filename).stem,
         'seq': seq_m.group(1) if seq_m else '',

@@ -25,6 +25,10 @@ from pigeon_rename.nametag import (
     extract_desc_slug, build_nametag, parse_nametag,
     detect_drift, scan_drift, slugify,
 )
+from pigeon_rename.split import (
+    scan_oversized, split_file, split_all_oversized,
+    SplitItem, bin_pack_items,
+)
 from pigeon_rename.registry import (
     load_registry, save_registry, build_registry_from_scan,
     build_pigeon_filename, parse_pigeon_stem,
@@ -53,6 +57,11 @@ __all__ = [
     "detect_drift",
     "scan_drift",
     "slugify",
+    "scan_oversized",
+    "split_file",
+    "split_all_oversized",
+    "SplitItem",
+    "bin_pack_items",
     "load_registry",
     "save_registry",
     "build_registry_from_scan",

@@ -10,6 +10,7 @@ Commands:
   pigeon audit <root>      — Run compliance audit (line count check)
   pigeon validate <root>   — Validate all internal imports resolve
   pigeon heal <root>       — Self-healing: rebuild manifests for changed files
+  pigeon split [file]      — Split oversized files into compliant chunks
   pigeon post-commit       — Git hook: manifest + audit (run from repo root)
 """
 import argparse
@@ -64,6 +65,15 @@ def main(argv: list[str] = None):
     p_heal.add_argument('--dry-run', action='store_true',
                         help='Preview changes without writing')
 
+    # -- split --
+    p_split = sub.add_parser('split', help='Split oversized files into compliant chunks')
+    p_split.add_argument('target', nargs='?',
+                         help='Specific file to split (default: scan all)')
+    p_split.add_argument('--root', default='.',
+                         help='Project root (default: current directory)')
+    p_split.add_argument('--dry-run', action='store_true',
+                         help='Preview splits without writing')
+
     # -- post-commit --
     p_hook = sub.add_parser('post-commit',
                             help='Git hook: regenerate manifests + audit')
@@ -75,7 +85,7 @@ def main(argv: list[str] = None):
         parser.print_help()
         return 1
 
-    root = Path(args.root).resolve()
+    root = Path(args.root if hasattr(args, 'root') else '.').resolve()
     if not root.is_dir():
         print(f'Error: {root} is not a directory', file=sys.stderr)
         return 1
@@ -92,6 +102,8 @@ def main(argv: list[str] = None):
         return _cmd_validate(root)
     elif args.command == 'heal':
         return _cmd_heal(root, args.full, args.dry_run)
+    elif args.command == 'split':
+        return _cmd_split(args.target, root, args.dry_run)
     elif args.command == 'post-commit':
         return _cmd_post_commit(root)
 
@@ -235,6 +247,57 @@ def _cmd_heal(root: Path, full: bool, dry_run: bool) -> int:
         print('[dry-run] No files written.')
 
     return 0 if not report['compliance'].get('critical') else 1
+
+
+def _cmd_split(target: str | None, root: Path, dry_run: bool) -> int:
+    """Split oversized files into compliant chunks."""
+    from pigeon_rename.split import scan_oversized, split_file, split_all_oversized
+
+    if target:
+        # Split specific file
+        target_path = Path(target)
+        if not target_path.exists():
+            target_path = root / target
+        if not target_path.exists():
+            print(f'Error: file not found: {target}', file=sys.stderr)
+            return 1
+
+        print(f'Splitting: {target_path}')
+        result = split_file(target_path, dry_run=dry_run)
+
+        if not result:
+            print('  No split needed or unable to split.')
+            return 0
+
+        print(f'  Created {len(result)} chunks:')
+        for chunk in result:
+            print(f'    {chunk.name} ({chunk["lines"]} lines)')
+
+        if dry_run:
+            print('[dry-run] No files written.')
+        return 0
+
+    # Scan all
+    print(f'Scanning for oversized files in {root}...')
+    oversized = scan_oversized(root)
+
+    if not oversized:
+        print('All files compliant. Nothing to split.')
+        return 0
+
+    print(f'Found {len(oversized)} oversized file(s):')
+    for item in oversized:
+        print(f'  {item.path.relative_to(root)} ({item.lines} lines, {item.excess} over)')
+
+    results = split_all_oversized(root, dry_run=dry_run)
+
+    total_chunks = sum(len(chunks) for chunks in results.values())
+    print(f'\nSplit {len(results)} files into {total_chunks} chunks.')
+
+    if dry_run:
+        print('[dry-run] No files written.')
+
+    return 0
 
 
 def _cmd_post_commit(root: Path) -> int:
